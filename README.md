@@ -2,8 +2,10 @@
 
 # 🏋️‍♂️ ACEest Fitness & Gym Management System
 
+[![Click to Access Application](https://img.shields.io/badge/Live%20App-Online-brightgreen?logo=render&labelColor=blue)](https://aceest-fitness-gym.onrender.com)
 
 <!-- Badges -->
+[![Latest Release](https://img.shields.io/github/v/release/IonMind/ACEest_Fitness_Py?label=Latest%20Release)](https://github.com/IonMind/ACEest_Fitness_Py/releases)
 ![CI/CD Status](https://github.com/IonMind/ACEest_Fitness_Py/actions/workflows/ci-cd.yml/badge.svg)
 ![License](https://img.shields.io/github/license/IonMind/ACEest_Fitness_Py)
 ![Open Issues](https://img.shields.io/github/issues/IonMind/ACEest_Fitness_Py)
