@@ -24,7 +24,7 @@ pipeline {
             steps {
                 script {
                     // send pending status to GitHub for current commit
-                    githubNotify context: 'CI/Jenkins', description: 'Build started', status: 'PENDING', credentialsId: githubnotify
+                    githubNotify context: 'CI/Jenkins', description: 'Build started', status: 'PENDING', credentialsId: GITHUB_CREDENTIALS
                 }
             }
         }
