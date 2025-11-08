@@ -19,6 +19,19 @@ pipeline {
             }
         }
 
+        stage('Notify GitHub - Start') {
+            steps {
+                script {
+                    // Send a GitHub status update that the build started. This uses the GitHub Notify plugin.
+                    try {
+                        githubNotify context: 'CI', status: 'PENDING', description: "Build #${env.BUILD_NUMBER} started", targetUrl: "${env.BUILD_URL}"
+                    } catch (err) {
+                        echo "githubNotify not available or failed: ${err}"
+                    }
+                }
+            }
+        }
+
         stage('Run tests in Docker') {
             steps {
                 sh '''
@@ -166,6 +179,33 @@ pipeline {
     }
 
     post {
+        success {
+            script {
+                try {
+                    githubNotify context: 'CI', status: 'SUCCESS', description: "Build #${env.BUILD_NUMBER} succeeded", targetUrl: "${env.BUILD_URL}"
+                } catch (err) {
+                    echo "githubNotify success notify failed: ${err}"
+                }
+            }
+        }
+        failure {
+            script {
+                try {
+                    githubNotify context: 'CI', status: 'FAILURE', description: "Build #${env.BUILD_NUMBER} failed", targetUrl: "${env.BUILD_URL}"
+                } catch (err) {
+                    echo "githubNotify failure notify failed: ${err}"
+                }
+            }
+        }
+        aborted {
+            script {
+                try {
+                    githubNotify context: 'CI', status: 'ERROR', description: "Build #${env.BUILD_NUMBER} aborted", targetUrl: "${env.BUILD_URL}"
+                } catch (err) {
+                    echo "githubNotify aborted notify failed: ${err}"
+                }
+            }
+        }
         always {
             // Archive the pytest report (if present) and record test results for Jenkins
             archiveArtifacts artifacts: 'report.xml', allowEmptyArchive: true
