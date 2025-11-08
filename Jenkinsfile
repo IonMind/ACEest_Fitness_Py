@@ -24,7 +24,7 @@ pipeline {
                 script {
                     // Send a GitHub status update that the build started. This uses the GitHub Notify plugin.
                     try {
-                        githubNotify context: 'CI', status: 'PENDING', description: "Build #${env.BUILD_NUMBER} started", targetUrl: "${env.BUILD_URL}"
+                        githubNotify credentialsId: 'githubnotify', context: 'CI', status: 'PENDING', description: "Build #${env.BUILD_NUMBER} started", targetUrl: "${env.BUILD_URL}"
                     } catch (err) {
                         echo "githubNotify not available or failed: ${err}"
                     }
@@ -182,7 +182,7 @@ pipeline {
         success {
             script {
                 try {
-                    githubNotify context: 'CI', status: 'SUCCESS', description: "Build #${env.BUILD_NUMBER} succeeded", targetUrl: "${env.BUILD_URL}"
+                    githubNotify credentialsId: 'githubnotify', context: 'CI', status: 'SUCCESS', description: "Build #${env.BUILD_NUMBER} succeeded", targetUrl: "${env.BUILD_URL}"
                 } catch (err) {
                     echo "githubNotify success notify failed: ${err}"
                 }
@@ -191,7 +191,7 @@ pipeline {
         failure {
             script {
                 try {
-                    githubNotify context: 'CI', status: 'FAILURE', description: "Build #${env.BUILD_NUMBER} failed", targetUrl: "${env.BUILD_URL}"
+                    githubNotify credentialsId: 'githubnotify', context: 'CI', status: 'FAILURE', description: "Build #${env.BUILD_NUMBER} failed", targetUrl: "${env.BUILD_URL}"
                 } catch (err) {
                     echo "githubNotify failure notify failed: ${err}"
                 }
@@ -200,7 +200,7 @@ pipeline {
         aborted {
             script {
                 try {
-                    githubNotify context: 'CI', status: 'ERROR', description: "Build #${env.BUILD_NUMBER} aborted", targetUrl: "${env.BUILD_URL}"
+                    githubNotify credentialsId: 'githubnotify', context: 'CI', status: 'ERROR', description: "Build #${env.BUILD_NUMBER} aborted", targetUrl: "${env.BUILD_URL}"
                 } catch (err) {
                     echo "githubNotify aborted notify failed: ${err}"
                 }
