@@ -88,9 +88,39 @@ pipeline {
       steps {
         sh '''
           set -e
-          echo "Building Docker image: aceest-fitness-app (post-tests)"
-          docker build -t aceest-fitness-app .
+          # Build image and tag it with date and build number so we can push a reproducible tag
+          TAG=$(date +%Y%m%d)-${BUILD_NUMBER}
+          echo "Building Docker image: aceest-fitness-app:${TAG} (post-tests)"
+          docker build -t aceest-fitness-app:${TAG} .
+          # Keep a 'latest' tag locally as well
+          docker tag aceest-fitness-app:${TAG} aceest-fitness-app:latest
         '''
+      }
+    }
+    
+    stage('Push app image') {
+      steps {
+        // Push built image to Docker Hub using credentials stored in Jenkins (credentialId: dockercreds)
+        withCredentials([usernamePassword(credentialsId: 'dockercreds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh '''
+            set -e
+            echo "Logging into Docker Hub as ${DOCKER_USER}"
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+
+            # Use the same date-BUILD_NUMBER tag used at build time
+            TAG=$(date +%Y%m%d)-${BUILD_NUMBER}
+            REMOTE_IMAGE=${DOCKER_USER}/aceest-fitness-app:${TAG}
+
+            echo "Tagging image aceest-fitness-app:${TAG} -> ${REMOTE_IMAGE}"
+            docker tag aceest-fitness-app:${TAG} ${REMOTE_IMAGE}
+
+            echo "Pushing ${REMOTE_IMAGE} to Docker Hub"
+            docker push ${REMOTE_IMAGE}
+
+            # Optional: logout
+            docker logout || true
+          '''
+        }
       }
     }
   }
