@@ -16,6 +16,10 @@ ENV FLASK_APP=src/app.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_RUN_PORT=5000
 
+# Allow build-time injection of application version. Jenkins will pass --build-arg APP_VERSION=<version> during docker build.
+ARG APP_VERSION=unknown
+ENV APP_VERSION=${APP_VERSION}
+
 # Expose port
 EXPOSE 5000
 

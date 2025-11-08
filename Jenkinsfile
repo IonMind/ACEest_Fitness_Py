@@ -89,9 +89,17 @@ pipeline {
                 sh '''
           set -e
           # Build image and tag it with date and build number so we can push a reproducible tag
-          TAG=$(date +%Y%m%d)-${BUILD_NUMBER}
-          echo "Building Docker image: aceest-fitness-app:${TAG} (post-tests)"
-          docker build -t aceest-fitness-app:${TAG} .
+                                                                TAG=$(date +%Y%m%d)-${BUILD_NUMBER}
+                                                                # Try to detect a git tag pointing at HEAD. First fetch tags (safe noop if already present),
+                                                                # then try exact match or tags pointing at HEAD. If none found, fall back to TAG.
+                                                                git fetch --tags --quiet || true
+                                                                VERSION_TAG=$(git describe --tags --exact-match 2>/dev/null || true)
+                                                                if [ -z "${VERSION_TAG}" ]; then
+                                                                    VERSION_TAG=$(git tag --points-at HEAD 2>/dev/null | head -n1 || true)
+                                                                fi
+                                                                BUILD_VERSION=${VERSION_TAG:-${TAG}}
+                                                                echo "Building Docker image: aceest-fitness-app:${TAG} (post-tests) with APP_VERSION=${BUILD_VERSION}"
+                                                                docker build --build-arg APP_VERSION=${BUILD_VERSION} -t aceest-fitness-app:${TAG} .
           # Keep a 'latest' tag locally as well
           docker tag aceest-fitness-app:${TAG} aceest-fitness-app:latest
         '''
@@ -125,12 +133,15 @@ pipeline {
         }
 
         stage('Deploy to Kubernetes') {
+            when {
+                branch 'master'
+            }
             steps {
                 withCredentials([
           file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE'),
           usernamePassword(credentialsId: 'dockercreds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
         ]) {
-                                                sh '''
+                    sh '''
                                 set -e
                                 export KUBECONFIG=${KUBECONFIG_FILE}
 
