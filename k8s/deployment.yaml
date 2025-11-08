@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-fitness-app
+  labels:
+    app: aceest-fitness-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aceest-fitness-app
+  template:
+    metadata:
+      labels:
+        app: aceest-fitness-app
+    spec:
+      containers:
+        - name: aceest-fitness-app
+          # Jenkins will replace the image at deploy time. Initial image here is a placeholder.
+          image: aceest-fitness-app:latest
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+      imagePullSecrets:
+        - name: regcred

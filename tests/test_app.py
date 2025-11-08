@@ -84,3 +84,34 @@ def test_add_workout_boundary_and_invalid_values(client):
     assert b'Big' in resp.data
     assert b'1000000 min' in resp.data
     assert b'999999999 cal' in resp.data
+
+
+def test_index_returns_html_and_contains_form(client):
+    """GET / should return HTML and include the workout form fields."""
+    resp = client.get('/')
+    assert resp.status_code == 200
+    # Flask test client exposes content_type
+    assert 'text/html' in resp.content_type
+    # Check presence of form inputs
+    assert b'name="workout"' in resp.data
+    assert b'name="duration"' in resp.data
+    assert b'name="calories"' in resp.data
+
+
+def test_add_post_redirects_to_index(client):
+    """A POST to /add without following redirects should return 302 and Location header."""
+    resp = client.post('/add', data={'workout': 'RedirectTest', 'duration': '10', 'calories': '100'}, follow_redirects=False)
+    assert resp.status_code == 302
+    # Location header typically is absolute (http://localhost/) in Flask test client
+    assert resp.headers.get('Location', '').endswith('/')
+
+
+def test_add_get_method_not_allowed(client):
+    """GET /add is not allowed (route only accepts POST) and should return 405."""
+    resp = client.get('/add')
+    assert resp.status_code == 405
+
+
+def test_unknown_route_returns_404(client):
+    resp = client.get('/this-route-does-not-exist')
+    assert resp.status_code == 404
