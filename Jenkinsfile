@@ -22,8 +22,6 @@ pipeline {
     stage('Run tests in Docker') {
       steps {
         sh '''
-          set -euo pipefail
-
           CONTAINER_NAME=testcontainer
           IMAGE_NAME=aceest-fitness-test
 
