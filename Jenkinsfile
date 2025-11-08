@@ -90,8 +90,6 @@ pipeline {
           set -e
           # Build image and tag it with date and build number so we can push a reproducible tag
                                                                 TAG=$(date +%Y%m%d)-${BUILD_NUMBER}
-                                                                # Try to detect a git tag pointing at HEAD. First fetch tags (safe noop if already present),
-                                                                # then try exact match or tags pointing at HEAD. If none found, fall back to TAG.
                                                                 git fetch --tags --quiet || true
                                                                 VERSION_TAG=$(git describe --tags --exact-match 2>/dev/null || true)
                                                                 if [ -z "${VERSION_TAG}" ]; then
