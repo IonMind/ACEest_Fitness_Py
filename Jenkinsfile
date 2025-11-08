@@ -24,7 +24,7 @@ pipeline {
                 script {
                     // Send a GitHub status update that the build started. This uses the GitHub Notify plugin.
                     try {
-                        githubNotify credentialsId: 'githubnotify', context: 'CI', status: 'PENDING', description: "Build #${env.BUILD_NUMBER} started", targetUrl: "${env.BUILD_URL}"
+                        githubNotify credentialsId: 'githubnotify', context: 'Jenkins CI', status: 'PENDING', description: "Build #${env.BUILD_NUMBER} started"
                     } catch (err) {
                         echo "githubNotify not available or failed: ${err}"
                     }
