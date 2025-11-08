@@ -1,5 +1,6 @@
 
 # Flask web app for ACEestFitness and Gym
+import os
 from flask import Flask, render_template_string, request, redirect, url_for
 
 app = Flask(__name__)
@@ -52,6 +53,9 @@ HTML_TEMPLATE = """
                 <p>No workouts logged yet.</p>
             {% endif %}
         </div>
+        <footer style="margin-top:24px; font-size:0.9em; color:#666; text-align:center;">
+            Version: {{ version }}
+        </footer>
     </div>
 </body>
 </html>
@@ -59,7 +63,8 @@ HTML_TEMPLATE = """
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template_string(HTML_TEMPLATE, workouts=workouts)
+    version = os.environ.get('APP_VERSION', 'unknown')
+    return render_template_string(HTML_TEMPLATE, workouts=workouts, version=version)
 
 @app.route('/add', methods=['POST'])
 def add_workout():
