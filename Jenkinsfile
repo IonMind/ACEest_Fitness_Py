@@ -9,16 +9,6 @@ pipeline {
       }
     }
 
-    stage('Build app image') {
-      steps {
-        sh '''
-          set -e
-          echo "Building Docker image: aceest-fitness-app"
-          docker build -t aceest-fitness-app .
-        '''
-      }
-    }
-
     stage('Build test image') {
       steps {
         sh '''
