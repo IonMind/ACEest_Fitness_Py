@@ -1,6 +1,8 @@
 pipeline {
     agent any
-
+    environment {
+        GITHUB_CREDENTIALS = 'githubnotify' // Jenkins credential ID (secret text / token)
+    }
     stages {
         stage('Checkout') {
             steps {
@@ -16,6 +18,14 @@ pipeline {
           echo "Building Docker test image: aceest-fitness-test (using testdockerfile)"
           docker build -f testdockerfile -t aceest-fitness-test .
         '''
+            }
+        }
+        stage('Notify: pending') {
+            steps {
+                script {
+                    // send pending status to GitHub for current commit
+                    githubNotify context: 'CI/Jenkins', description: 'Build started', status: 'PENDING', credentialsId: githubnotify
+                }
             }
         }
 
@@ -166,6 +176,12 @@ pipeline {
     }
 
     post {
+        success {
+            githubNotify context: 'CI/Jenkins', description: 'All tests passed', status: 'SUCCESS', credentialsId: GITHUB_CREDENTIALS
+        }
+        failure {
+            githubNotify context: 'CI/Jenkins', description: 'Build failed', status: 'FAILURE', credentialsId: GITHUB_CREDENTIALS
+        }
         always {
             // Archive the pytest report (if present) and record test results for Jenkins
             archiveArtifacts artifacts: 'report.xml', allowEmptyArchive: true
