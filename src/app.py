@@ -12,44 +12,39 @@ workouts = {category: [] for category in CATEGORIES}
 
 WORKOUT_CHART_DATA = {
     "Warm-up (5-10 min)": [
-        "5 min light cardio (Jog/Cycle)",
-        "Jumping Jacks (30 reps)",
-        "Arm Circles (15 forward/backward)",
-        "Leg Swings (10 per leg)",
+        "5 min light cardio (Jog/Cycle) to raise heart rate.",
+        "Jumping Jacks (30 reps) for dynamic mobility.",
+        "Arm Circles (15 Fwd/Bwd) to prepare shoulders.",
     ],
-    "Strength Workout (45-60 min)": [
-        "Push-ups (3 x 10-15)",
-        "Squats (3 x 15-20)",
-        "Plank (3 x 60 seconds)",
-        "Lunges (3 x 10 per leg)",
-        "Dumbbell Rows (3 x 12)",
+    "Strength & Cardio (45-60 min)": [
+        "Push-ups (3 sets of 10-15) – Upper body strength.",
+        "Squats (3 sets of 15-20) – Lower body foundation.",
+        "Plank (3 sets of 60 seconds) – Core stabilization.",
+        "Lunges (3 sets of 10 per leg) – Balance and leg development.",
+        "Dumbbell Rows (3 sets of 12) – Posterior chain engagement.",
     ],
     "Cool-down (5 min)": [
-        "Slow Walking",
-        "Static Stretching (hold 30s each)",
-        "Deep Breathing Exercises",
-        "Short Yoga Flow",
+        "Slow Walking to reduce intensity gradually.",
+        "Static Stretching (Hold 30s each) for flexibility.",
+        "Deep Breathing Exercises to promote recovery.",
     ],
 }
 
 DIET_PLANS = {
-    "🎯 Weight Loss": [
-        "Breakfast: Oatmeal with berries",
-        "Lunch: Grilled chicken/tofu salad",
-        "Snack: Handful of nuts",
-        "Dinner: Vegetable soup with lentils",
+    "🎯 Weight Loss Focus (Calorie Deficit)": [
+        "Breakfast: Oatmeal with Berries (High Fiber).",
+        "Lunch: Grilled Chicken/Tofu Salad (Lean Protein).",
+        "Dinner: Vegetable Soup with Lentils (Low Calorie, High Volume).",
     ],
-    "💪 Muscle Gain": [
-        "Breakfast: 3-egg omelet with spinach",
-        "Lunch: Chicken breast, quinoa, steamed veggies",
-        "Snack: Protein shake and Greek yogurt",
-        "Dinner: Salmon with roasted sweet potatoes",
+    "💪 Muscle Gain Focus (High Protein)": [
+        "Breakfast: 3 Egg Omelet, Spinach, Whole-wheat Toast (Protein/Carb combo).",
+        "Lunch: Chicken Breast, Quinoa, and Steamed Veggies (Balanced Meal).",
+        "Post-Workout: Protein Shake & Greek Yogurt (Immediate Recovery).",
     ],
-    "🏃 Endurance Focus": [
-        "Pre-workout: Banana with peanut butter",
-        "Lunch: Whole grain pasta with lean protein",
-        "Snack: Trail mix with dried fruits",
-        "Dinner: Salmon & avocado salad",
+    "🏃 Endurance Focus (Complex Carbs)": [
+        "Pre-Workout: Banana & Peanut Butter (Quick Energy).",
+        "Lunch: Whole Grain Pasta with Light Sauce (Sustainable Carbs).",
+        "Dinner: Salmon & Avocado Salad (Omega-3s and Healthy Fats).",
     ],
 }
 
@@ -60,16 +55,25 @@ HTML_TEMPLATE = """
     <meta charset='UTF-8'>
     <title>ACEestFitness and Gym</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #eef1f4; margin: 0; padding: 0; }
-        .container { max-width: 820px; margin: 40px auto; background: #fff; padding: 28px; border-radius: 10px; box-shadow: 0 8px 22px rgba(44, 62, 80, 0.15); }
-        h1 { color: #2c3e50; margin-bottom: 8px; font-size: 2em; }
-        .subtitle { color: #555; margin-top: 0; font-size: 1.05em; }
+        :root {
+            --color-primary: #4caf50;
+            --color-primary-dark: #388e3c;
+            --color-secondary: #2196f3;
+            --color-secondary-dark: #1976d2;
+            --color-background: #f8f9fa;
+            --color-card: #ffffff;
+            --color-text: #343a40;
+        }
+        body { font-family: Arial, sans-serif; background: var(--color-background); margin: 0; padding: 0; color: var(--color-text); }
+        .container { max-width: 860px; margin: 40px auto; background: var(--color-card); padding: 32px; border-radius: 12px; box-shadow: 0 12px 28px rgba(44, 62, 80, 0.15); }
+        h1 { color: var(--color-text); margin-bottom: 8px; font-size: 2.1em; }
+        .subtitle { color: #6c757d; margin-top: 0; font-size: 1.05em; }
         form { margin-bottom: 24px; }
-        label { display: block; margin-top: 12px; font-weight: bold; color: #2c3e50; }
-        input[type=text], input[type=number], select { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ced4da; border-radius: 6px; background: #f8f9fa; }
-        input[type=text]:focus, input[type=number]:focus, select:focus { outline: none; border-color: #007bff; background: #fff; }
-        button { margin-top: 18px; padding: 12px 20px; background: #28a745; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; letter-spacing: 0.4px; }
-        button:hover { background: #219150; }
+        label { display: block; margin-top: 12px; font-weight: bold; color: var(--color-text); }
+        input[type=text], input[type=number], select { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ced4da; border-radius: 8px; background: #f1f3f5; transition: border-color 0.2s, background 0.2s; }
+        input[type=text]:focus, input[type=number]:focus, select:focus { outline: none; border-color: var(--color-secondary); background: var(--color-card); }
+        button { margin-top: 20px; padding: 13px 22px; background: var(--color-primary); color: #fff; border: none; border-radius: 24px; cursor: pointer; font-weight: bold; letter-spacing: 0.6px; text-transform: uppercase; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.25); }
+        button:hover { background: var(--color-primary-dark); }
         .messages { margin-top: 16px; }
         .messages .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
         .messages .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
@@ -79,21 +83,22 @@ HTML_TEMPLATE = """
         .actions a { color: #007bff; text-decoration: none; font-weight: bold; }
         .actions a:hover { text-decoration: underline; }
         .tabs { margin-top: 24px; }
-        .tab-nav { display: flex; gap: 8px; flex-wrap: wrap; }
-        .tab-btn { background: #dde5f2; border: none; padding: 10px 18px; border-radius: 20px; cursor: pointer; color: #2c3e50; font-weight: 600; transition: background 0.3s, transform 0.2s; }
-        .tab-btn:hover { background: #d0d9e4; transform: translateY(-1px); }
-        .tab-btn.active { background: #007bff; color: #fff; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.25); }
+    .tab-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab-btn { background: #e4ecf6; border: none; padding: 10px 20px; border-radius: 24px; cursor: pointer; color: var(--color-text); font-weight: 600; transition: background 0.3s, transform 0.2s; }
+    .tab-btn:hover { background: #d0d9e4; transform: translateY(-1px); }
+    .tab-btn.active { background: var(--color-secondary); color: #fff; box-shadow: 0 6px 14px rgba(33, 150, 243, 0.25); }
         .tab-panel { display: none; margin-top: 24px; }
         .tab-panel.active { display: block; }
-        .input-card { background: #eef4fb; padding: 20px; border-radius: 10px; border: 1px solid #dce4f0; }
+    .input-card { background: #eef4fb; padding: 26px; border-radius: 12px; border: 1px solid #dce4f0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02); }
         .chart-group, .diet-group { background: #f8f9fa; border-radius: 8px; padding: 18px; margin-bottom: 18px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04); }
         .chart-group h3, .diet-group h3 { margin-top: 0; }
         ul { padding-left: 18px; }
-        .chart-wrapper { background: #fff; border-radius: 8px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-        .progress-note { color: #555; margin-bottom: 8px; font-weight: bold; }
-        .progress-summary { color: #dc3545; font-weight: bold; margin-top: 12px; }
-        .empty-progress { color: #777; font-style: italic; }
-        .section-title { font-size: 1.4em; color: #343a40; margin-bottom: 12px; }
+    .chart-wrapper { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 16px; box-shadow: 0 8px 18px rgba(0,0,0,0.05); }
+    .progress-note { color: #6c757d; margin-bottom: 8px; font-weight: bold; }
+    .progress-summary { color: #dc3545; font-weight: bold; margin-top: 16px; }
+    .empty-progress { color: #777; font-style: italic; }
+    .section-title { font-size: 1.4em; color: #343a40; margin-bottom: 12px; }
+    .section-subtitle { color: #6c757d; margin-top: 0; margin-bottom: 16px; font-size: 0.95em; }
         .summary-header { margin-bottom: 16px; text-align: center; }
         .summary-category { color: #007bff; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         .summary-entry { margin-left: 16px; margin-bottom: 6px; }
@@ -115,7 +120,8 @@ HTML_TEMPLATE = """
             </div>
             <div id="log-tab" class="tab-panel active">
                 <div class="input-card">
-                    <h2 class="section-title">ACEest Fitness &amp; Gym Tracker</h2>
+                    <h2 class="section-title">ACEest Session Logger</h2>
+                    <p class="section-subtitle">Track your progress with precision.</p>
                     <form method="POST" action="{{ url_for('add_workout') }}">
                         <label for="category">Select Category</label>
                         <select id="category" name="category" required>
@@ -172,7 +178,8 @@ HTML_TEMPLATE = """
                 </div>
             </div>
             <div id="chart-tab" class="tab-panel">
-                <h2 class="section-title">💡 Personalized Workout Plan</h2>
+                <h2 class="section-title">💡 Personalized Workout Plan Guide</h2>
+                <p class="section-subtitle">Structured flows to keep your sessions purposeful.</p>
                 {% for category, exercises in workout_chart.items() %}
                     <div class="chart-group">
                         <h3>{{ category }}</h3>
@@ -185,7 +192,8 @@ HTML_TEMPLATE = """
                 {% endfor %}
             </div>
             <div id="diet-tab" class="tab-panel">
-                <h2 class="section-title">🥗 Best Diet Guide for Fitness Goals</h2>
+                <h2 class="section-title">🥗 Nutritional Goal Setting Guide</h2>
+                <p class="section-subtitle">Align your meals with the outcomes you’re chasing.</p>
                 {% for goal, foods in diet_plans.items() %}
                     <div class="diet-group">
                         <h3>{{ goal }}</h3>
@@ -198,16 +206,16 @@ HTML_TEMPLATE = """
                 {% endfor %}
             </div>
             <div id="progress-tab" class="tab-panel">
-                <h2 class="section-title">📈 Personal Progress Tracker (Minutes Logged)</h2>
-                <p class="progress-note">Track how your sessions build momentum.</p>
-                <p id="progress-empty" class="empty-progress" {% if total_minutes %}style="display:none"{% endif %}>Log workouts to unlock your progress insights.</p>
+                <h2 class="section-title">📈 Personal Progress Tracker</h2>
+                <p class="progress-note">Visualization of your logged workout time distribution.</p>
+                <p id="progress-empty" class="empty-progress" {% if total_minutes %}style="display:none"{% endif %}>No workout data logged yet. Log a session to see your progress!</p>
                 <div class="chart-wrapper">
                     <canvas id="durationBarChart" width="400" height="240"></canvas>
                 </div>
                 <div class="chart-wrapper">
                     <canvas id="distributionPieChart" width="400" height="240"></canvas>
                 </div>
-                <p class="progress-summary" id="progress-summary" {% if not total_minutes %}style="display:none"{% endif %}>Total Training Time Logged: {{ total_minutes }} minutes</p>
+                <p class="progress-summary" id="progress-summary" {% if not total_minutes %}style="display:none"{% endif %}>LIFETIME TOTAL: {{ total_minutes }} minutes logged across all categories.</p>
             </div>
         </div>
         <footer>
@@ -255,7 +263,7 @@ HTML_TEMPLATE = """
             }
             if (summaryText) {
                 summaryText.style.display = 'block';
-                summaryText.textContent = 'Total Training Time Logged: ' + totalMinutes + ' minutes';
+                summaryText.textContent = 'LIFETIME TOTAL: ' + totalMinutes + ' minutes logged across all categories.';
             }
 
             var palette = ['#007bff', '#28a745', '#ffc107'];
