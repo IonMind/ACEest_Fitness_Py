@@ -1,14 +1,32 @@
 
 # Flask web app for ACEestFitness and Gym
 import os
-from datetime import datetime
-from flask import Flask, render_template_string, request, redirect, url_for, flash
+import io
+from datetime import datetime, timedelta
+from flask import Flask, render_template_string, request, redirect, url_for, flash, send_file
+
+# PDF/report utilities (parity with Tkinter v1.3 export)
+from reportlab.pdfgen import canvas as pdf_canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib import colors as rl_colors
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "aceest-dev-secret")
 
 CATEGORIES = ("Warm-up", "Workout", "Cool-down")
 workouts = {category: [] for category in CATEGORIES}
+
+# MET values and user profile (from Tkinter v1.3)
+MET_VALUES = {
+    "Warm-up": 3,
+    "Workout": 6,
+    "Cool-down": 2.5,
+}
+
+# Simple in-memory user profile and daily aggregation
+user_info = {}
+daily_workouts = {}  # key: ISO date string -> {category: [entries]}
 
 WORKOUT_CHART_DATA = {
     "Warm-up (5-10 min)": [
@@ -111,6 +129,50 @@ HTML_TEMPLATE = """
     <div class="container">
         <h1>ACEestFitness and Gym</h1>
         <p class="subtitle">Log your training, follow curated workout flows, and keep nutrition aligned.</p>
+        <!-- User Info -->
+        <div class="input-card" style="margin-bottom: 18px;">
+            <h2 class="section-title">📝 User Info</h2>
+            <form method="POST" action="{{ url_for('save_user_info') }}">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" value="{{ user_info.get('name','') }}" placeholder="Your full name" required>
+
+                <label for="regn_id">Regn-ID</label>
+                <input type="text" id="regn_id" name="regn_id" value="{{ user_info.get('regn_id','') }}" placeholder="Membership / Registration ID" required>
+
+                <label for="age">Age</label>
+                <input type="number" id="age" name="age" min="1" value="{{ user_info.get('age','') }}" required>
+
+                <label for="gender">Gender (M/F)</label>
+                <select id="gender" name="gender" required>
+                    <option value="" {% if not user_info %}selected{% endif %} disabled>Select</option>
+                    <option value="M" {% if user_info.get('gender')=='M' %}selected{% endif %}>M</option>
+                    <option value="F" {% if user_info.get('gender')=='F' %}selected{% endif %}>F</option>
+                </select>
+
+                <label for="height">Height (cm)</label>
+                <input type="number" step="0.1" id="height" name="height" min="50" value="{{ user_info.get('height','') }}" required>
+
+                <label for="weight">Weight (kg)</label>
+                <input type="number" step="0.1" id="weight" name="weight" min="10" value="{{ user_info.get('weight','') }}" required>
+
+                <label for="weekly_cal_goal">Weekly Calorie Goal (kcal)</label>
+                <input type="number" id="weekly_cal_goal" name="weekly_cal_goal" min="0" value="{{ user_info.get('weekly_cal_goal', 2000) }}" required>
+
+                <button type="submit">Save Info</button>
+            </form>
+            {% if user_info %}
+                <div style="margin-top: 10px;">
+                    <div class="messages info">Saved. BMI={{ '%.1f'|format(user_info['bmi']) }}, BMR={{ '%.0f'|format(user_info['bmr']) }} kcal/day</div>
+                    <div style="margin-top: 8px;">
+                        <strong>Weekly Calories:</strong> {{ weekly_calories }} / {{ user_info.get('weekly_cal_goal', 2000) }} kcal
+                        <div style="height: 10px; background:#e9ecef; border-radius:6px; margin-top:6px;">
+                            <div style="height:10px; width: {{ weekly_progress_percent }}%; background: var(--color-secondary); border-radius:6px;"></div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
         <div class="tabs">
             <div class="tab-nav">
                 <button type="button" class="tab-btn active" data-target="log-tab">🏋️ Log Workouts</button>
@@ -141,6 +203,22 @@ HTML_TEMPLATE = """
 
                         <button type="submit">✅ Add Session</button>
                     </form>
+                    <div style="margin-top:16px;">
+                        <form method="POST" action="{{ url_for('add_workout_auto') }}">
+                            <label for="category_auto">Quick Add (Auto Calories via MET)</label>
+                            <select id="category_auto" name="category" required>
+                                {% for category in categories %}
+                                    <option value="{{ category }}" {% if category == default_category %}selected{% endif %}>{{ category }}</option>
+                                {% endfor %}
+                            </select>
+                            <label for="workout_auto">Exercise</label>
+                            <input type="text" id="workout_auto" name="workout" placeholder="e.g. Intervals" required>
+                            <label for="duration_auto">Duration (minutes)</label>
+                            <input type="number" id="duration_auto" name="duration" min="1" placeholder="e.g. 30" required>
+                            <button type="submit" style="background: var(--color-secondary);">⚡ Add with Auto Calories</button>
+                            <div class="summary-note">Uses your saved weight (or 70kg) and category MET to estimate calories.</div>
+                        </form>
+                    </div>
                 </div>
 
                 <div class="messages">
@@ -175,6 +253,8 @@ HTML_TEMPLATE = """
                 </div>
                 <div class="actions">
                     <a href="{{ url_for('summary') }}">View Summary</a>
+                    &nbsp;|&nbsp;
+                    <a href="{{ url_for('export_weekly_pdf') }}">📄 Export Weekly PDF Report</a>
                 </div>
             </div>
             <div id="chart-tab" class="tab-panel">
@@ -392,6 +472,24 @@ def index():
     total_sessions = sum(len(sessions) for sessions in workouts.values())
     progress_totals = {category: sum(entry['duration'] for entry in sessions) for category, sessions in workouts.items()}
     total_minutes = sum(progress_totals.values())
+    # Weekly calories progress (last 7 days including today)
+    weekly_calories = 0
+    try:
+        today = datetime.now().date()
+        week_start = today - timedelta(days=6)
+        for cat, sessions in workouts.items():
+            for entry in sessions:
+                try:
+                    d = datetime.strptime(entry['timestamp'], "%Y-%m-%d %H:%M:%S").date()
+                except Exception:
+                    # Fallback: ignore malformed timestamps
+                    continue
+                if d >= week_start:
+                    weekly_calories += int(entry.get('calories', 0))
+    except Exception:
+        weekly_calories = 0
+    goal = user_info.get('weekly_cal_goal', 2000) if user_info else 2000
+    weekly_progress_percent = min(100, int((weekly_calories / goal) * 100)) if goal else 0
     return render_template_string(
         HTML_TEMPLATE,
         workouts=workouts,
@@ -403,6 +501,9 @@ def index():
         diet_plans=DIET_PLANS,
         progress_totals=progress_totals,
         total_minutes=total_minutes,
+        user_info=user_info,
+        weekly_calories=weekly_calories,
+        weekly_progress_percent=weekly_progress_percent,
     )
 
 @app.route('/add', methods=['POST'])
@@ -442,7 +543,56 @@ def add_workout():
         'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
     workouts[category].append(entry)
+    # Track daily workouts (parity with Tkinter)
+    today_iso = datetime.now().date().isoformat()
+    if today_iso not in daily_workouts:
+        daily_workouts[today_iso] = {c: [] for c in CATEGORIES}
+    daily_workouts[today_iso][category].append(entry)
     flash(f"✅ Added {entry['workout']} ({duration} min) to {category}.", "info")
+    return redirect(url_for('index'))
+
+@app.route('/add-auto', methods=['POST'])
+def add_workout_auto():
+    """Add a workout with calories auto-calculated from MET and user weight."""
+    workout = request.form.get('workout')
+    duration = request.form.get('duration')
+    category = request.form.get('category', 'Workout')
+
+    if not (workout and duration and category):
+        flash("Please fill in all fields before submitting.", "error")
+        return redirect(url_for('index'))
+
+    if category not in CATEGORIES:
+        flash("Invalid category selected.", "error")
+        return redirect(url_for('index'))
+
+    try:
+        duration = int(duration)
+    except ValueError:
+        flash("Duration must be a numeric value.", "error")
+        return redirect(url_for('index'))
+
+    if duration <= 0:
+        flash("Duration must be a positive number.", "error")
+        return redirect(url_for('index'))
+
+    # Compute calories via MET formula
+    weight = (user_info or {}).get('weight', 70)
+    met = MET_VALUES.get(category, 5)
+    calories = int(round((met * 3.5 * float(weight) / 200.0) * duration))
+
+    entry = {
+        'workout': workout.strip(),
+        'duration': duration,
+        'calories': calories,
+        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    workouts[category].append(entry)
+    today_iso = datetime.now().date().isoformat()
+    if today_iso not in daily_workouts:
+        daily_workouts[today_iso] = {c: [] for c in CATEGORIES}
+    daily_workouts[today_iso][category].append(entry)
+    flash(f"✅ Added {entry['workout']} ({duration} min, ~{calories} kcal) to {category}.", "info")
     return redirect(url_for('index'))
 
 @app.route('/summary', methods=['GET'])
@@ -461,6 +611,83 @@ def summary():
         total_time=total_time,
         motivation=motivation,
     )
+
+
+@app.route('/user/save', methods=['POST'])
+def save_user_info():
+    """Save user info and compute BMI/BMR (mimics Tkinter behavior)."""
+    try:
+        name = (request.form.get('name') or '').strip()
+        regn_id = (request.form.get('regn_id') or '').strip()
+        age = int(request.form.get('age'))
+        gender = (request.form.get('gender') or '').strip().upper()
+        height_cm = float(request.form.get('height'))
+        weight_kg = float(request.form.get('weight'))
+        weekly_cal_goal = int(request.form.get('weekly_cal_goal') or 2000)
+        if not name or not regn_id or gender not in {"M", "F"}:
+            raise ValueError("Please provide valid name, regn-id and gender.")
+        bmi = weight_kg / ((height_cm / 100.0) ** 2)
+        if gender == "M":
+            bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age + 5
+        else:
+            bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age - 161
+        user_info.clear()
+        user_info.update({
+            "name": name,
+            "regn_id": regn_id,
+            "age": age,
+            "gender": gender,
+            "height": height_cm,
+            "weight": weight_kg,
+            "bmi": bmi,
+            "bmr": bmr,
+            "weekly_cal_goal": weekly_cal_goal,
+        })
+        flash(f"User info saved! BMI={bmi:.1f}, BMR={bmr:.0f} kcal/day", "info")
+    except Exception as e:
+        flash(f"Invalid input: {e}", "error")
+    return redirect(url_for('index'))
+
+
+@app.route('/export/pdf', methods=['GET'])
+def export_weekly_pdf():
+    """Export a simple PDF report of all logged workouts and user info."""
+    if not user_info:
+        flash("Please save user info first!", "error")
+        return redirect(url_for('index'))
+
+    buffer = io.BytesIO()
+    c = pdf_canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, height - 50, f"Weekly Fitness Report - {user_info['name']}")
+
+    # User info block
+    c.setFont("Helvetica", 11)
+    c.drawString(50, height - 80, f"Regn-ID: {user_info['regn_id']} | Age: {user_info['age']} | Gender: {user_info['gender']}")
+    c.drawString(50, height - 100, f"Height: {user_info['height']} cm | Weight: {user_info['weight']} kg | BMI: {user_info['bmi']:.1f} | BMR: {user_info['bmr']:.0f} kcal/day")
+
+    # Table of workouts
+    y = height - 140
+    table_data = [["Category", "Exercise", "Duration(min)", "Calories(kcal)", "Date"]]
+    for cat, sessions in workouts.items():
+        for e in sessions:
+            date_str = (e.get('timestamp') or '').split(' ')[0]
+            table_data.append([cat, e.get('workout', ''), str(e.get('duration', '')), str(e.get('calories', '')), date_str])
+    table = Table(table_data, colWidths=[80, 150, 100, 100, 80])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), rl_colors.lightblue),
+        ("GRID", (0, 0), (-1, -1), 0.5, rl_colors.black),
+    ]))
+    table.wrapOn(c, width - 100, y)
+    table.drawOn(c, 50, max(40, y - 20 - 18 * len(table_data)))
+
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+
+    filename = f"{user_info['name'].replace(' ', '_')}_weekly_report.pdf"
+    return send_file(buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
