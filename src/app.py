@@ -11,49 +11,45 @@ CATEGORIES = ("Warm-up", "Workout", "Cool-down")
 workouts = {category: [] for category in CATEGORIES}
 
 WORKOUT_CHART_DATA = {
-    "Warm-up": [
-        "5 min Jog",
-        "Jumping Jacks",
-        "Arm Circles",
-        "Leg Swings",
-        "Dynamic Stretching",
+    "Warm-up (5-10 min)": [
+        "5 min light cardio (Jog/Cycle)",
+        "Jumping Jacks (30 reps)",
+        "Arm Circles (15 forward/backward)",
+        "Leg Swings (10 per leg)",
     ],
-    "Workout": [
-        "Push-ups",
-        "Squats",
-        "Plank",
-        "Lunges",
-        "Burpees",
-        "Crunches",
+    "Strength Workout (45-60 min)": [
+        "Push-ups (3 x 10-15)",
+        "Squats (3 x 15-20)",
+        "Plank (3 x 60 seconds)",
+        "Lunges (3 x 10 per leg)",
+        "Dumbbell Rows (3 x 12)",
     ],
-    "Cool-down": [
+    "Cool-down (5 min)": [
         "Slow Walking",
-        "Static Stretching",
-        "Deep Breathing",
-        "Yoga Poses",
+        "Static Stretching (hold 30s each)",
+        "Deep Breathing Exercises",
+        "Short Yoga Flow",
     ],
 }
 
 DIET_PLANS = {
-    "Weight Loss": [
-        "Oatmeal with Fruits",
-        "Grilled Chicken Salad",
-        "Vegetable Soup",
-        "Brown Rice & Stir-fry Veggies",
+    "🎯 Weight Loss": [
+        "Breakfast: Oatmeal with berries",
+        "Lunch: Grilled chicken/tofu salad",
+        "Snack: Handful of nuts",
+        "Dinner: Vegetable soup with lentils",
     ],
-    "Muscle Gain": [
-        "Egg Omelet",
-        "Chicken Breast",
-        "Quinoa & Beans",
-        "Protein Shake",
-        "Greek Yogurt with Nuts",
+    "💪 Muscle Gain": [
+        "Breakfast: 3-egg omelet with spinach",
+        "Lunch: Chicken breast, quinoa, steamed veggies",
+        "Snack: Protein shake and Greek yogurt",
+        "Dinner: Salmon with roasted sweet potatoes",
     ],
-    "Endurance": [
-        "Banana & Peanut Butter",
-        "Whole Grain Pasta",
-        "Sweet Potatoes",
-        "Salmon & Avocado",
-        "Trail Mix",
+    "🏃 Endurance Focus": [
+        "Pre-workout: Banana with peanut butter",
+        "Lunch: Whole grain pasta with lean protein",
+        "Snack: Trail mix with dried fruits",
+        "Dinner: Salmon & avocado salad",
     ],
 }
 
@@ -64,37 +60,45 @@ HTML_TEMPLATE = """
     <meta charset='UTF-8'>
     <title>ACEestFitness and Gym</title>
     <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
-        .container { max-width: 760px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px #ccc; }
-        h1 { color: #2c3e50; margin-bottom: 8px; }
-        .subtitle { color: #555; margin-top: 0; }
+        body { font-family: Arial, sans-serif; background: #eef1f4; margin: 0; padding: 0; }
+        .container { max-width: 820px; margin: 40px auto; background: #fff; padding: 28px; border-radius: 10px; box-shadow: 0 8px 22px rgba(44, 62, 80, 0.15); }
+        h1 { color: #2c3e50; margin-bottom: 8px; font-size: 2em; }
+        .subtitle { color: #555; margin-top: 0; font-size: 1.05em; }
         form { margin-bottom: 24px; }
-        label { display: block; margin-top: 12px; }
-        input[type=text], input[type=number] { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px; }
-        select { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px; }
-        button { margin-top: 16px; padding: 10px 20px; background: #27ae60; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        label { display: block; margin-top: 12px; font-weight: bold; color: #2c3e50; }
+        input[type=text], input[type=number], select { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ced4da; border-radius: 6px; background: #f8f9fa; }
+        input[type=text]:focus, input[type=number]:focus, select:focus { outline: none; border-color: #007bff; background: #fff; }
+        button { margin-top: 18px; padding: 12px 20px; background: #28a745; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; letter-spacing: 0.4px; }
         button:hover { background: #219150; }
         .messages { margin-top: 16px; }
-        .messages .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 10px; border-radius: 4px; margin-bottom: 8px; }
-        .messages .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; border-radius: 4px; margin-bottom: 8px; }
+        .messages .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
+        .messages .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
         .workout-list { margin-top: 32px; }
-        .workout-item { background: #eafaf1; padding: 10px; border-radius: 4px; margin-bottom: 8px; }
+        .workout-item { background: #eafaf1; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #28a745; }
         .actions { margin-top: 16px; text-align: center; }
-        .actions a { color: #007bff; text-decoration: none; }
+        .actions a { color: #007bff; text-decoration: none; font-weight: bold; }
         .actions a:hover { text-decoration: underline; }
         .tabs { margin-top: 24px; }
         .tab-nav { display: flex; gap: 8px; flex-wrap: wrap; }
-        .tab-btn { background: #e0e7ef; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; color: #2c3e50; transition: background 0.3s; }
-        .tab-btn:hover { background: #d0d9e4; }
-        .tab-btn.active { background: #007bff; color: #fff; }
+        .tab-btn { background: #dde5f2; border: none; padding: 10px 18px; border-radius: 20px; cursor: pointer; color: #2c3e50; font-weight: 600; transition: background 0.3s, transform 0.2s; }
+        .tab-btn:hover { background: #d0d9e4; transform: translateY(-1px); }
+        .tab-btn.active { background: #007bff; color: #fff; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.25); }
         .tab-panel { display: none; margin-top: 24px; }
         .tab-panel.active { display: block; }
-        .chart-group, .diet-group { background: #f8f9fa; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
+        .input-card { background: #eef4fb; padding: 20px; border-radius: 10px; border: 1px solid #dce4f0; }
+        .chart-group, .diet-group { background: #f8f9fa; border-radius: 8px; padding: 18px; margin-bottom: 18px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04); }
         .chart-group h3, .diet-group h3 { margin-top: 0; }
         ul { padding-left: 18px; }
-        .chart-wrapper { background: #fff; border-radius: 6px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-        .progress-note { color: #555; margin-bottom: 16px; }
+        .chart-wrapper { background: #fff; border-radius: 8px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .progress-note { color: #555; margin-bottom: 8px; font-weight: bold; }
+        .progress-summary { color: #dc3545; font-weight: bold; margin-top: 12px; }
         .empty-progress { color: #777; font-style: italic; }
+        .section-title { font-size: 1.4em; color: #343a40; margin-bottom: 12px; }
+        .summary-header { margin-bottom: 16px; text-align: center; }
+        .summary-category { color: #007bff; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .summary-entry { margin-left: 16px; margin-bottom: 6px; }
+        .summary-total { margin-top: 24px; font-weight: bold; color: #dc3545; font-size: 1.1em; }
+        .summary-note { margin-top: 8px; color: #555; font-style: italic; }
         footer { margin-top: 24px; font-size: 0.9em; color: #666; text-align: center; }
     </style>
 </head>
@@ -104,31 +108,34 @@ HTML_TEMPLATE = """
         <p class="subtitle">Log your training, follow curated workout flows, and keep nutrition aligned.</p>
         <div class="tabs">
             <div class="tab-nav">
-                <button type="button" class="tab-btn active" data-target="log-tab">Log Workouts</button>
-                <button type="button" class="tab-btn" data-target="chart-tab">Workout Chart</button>
-                <button type="button" class="tab-btn" data-target="diet-tab">Diet Chart</button>
-                <button type="button" class="tab-btn" data-target="progress-tab">Progress Tracker</button>
+                <button type="button" class="tab-btn active" data-target="log-tab">🏋️ Log Workouts</button>
+                <button type="button" class="tab-btn" data-target="chart-tab">💡 Workout Plan</button>
+                <button type="button" class="tab-btn" data-target="diet-tab">🥗 Diet Guide</button>
+                <button type="button" class="tab-btn" data-target="progress-tab">📈 Progress Tracker</button>
             </div>
             <div id="log-tab" class="tab-panel active">
-                <form method="POST" action="{{ url_for('add_workout') }}">
-                    <label for="workout">Workout Name:</label>
-                    <input type="text" id="workout" name="workout" required>
+                <div class="input-card">
+                    <h2 class="section-title">ACEest Fitness &amp; Gym Tracker</h2>
+                    <form method="POST" action="{{ url_for('add_workout') }}">
+                        <label for="category">Select Category</label>
+                        <select id="category" name="category" required>
+                            {% for category in categories %}
+                                <option value="{{ category }}" {% if category == default_category %}selected{% endif %}>{{ category }}</option>
+                            {% endfor %}
+                        </select>
 
-                    <label for="duration">Duration (minutes):</label>
-                    <input type="number" id="duration" name="duration" min="1" required>
+                        <label for="workout">Exercise</label>
+                        <input type="text" id="workout" name="workout" placeholder="e.g. Interval Sprints" required>
 
-                    <label for="calories">Calories Burned:</label>
-                    <input type="number" id="calories" name="calories" min="0" required>
+                        <label for="duration">Duration (minutes)</label>
+                        <input type="number" id="duration" name="duration" min="1" placeholder="e.g. 30" required>
 
-                    <label for="category">Select Category:</label>
-                    <select id="category" name="category" required>
-                        {% for category in categories %}
-                            <option value="{{ category }}" {% if category == default_category %}selected{% endif %}>{{ category }}</option>
-                        {% endfor %}
-                    </select>
+                        <label for="calories">Calories Burned</label>
+                        <input type="number" id="calories" name="calories" min="0" placeholder="e.g. 250" required>
 
-                    <button type="submit">Add Workout</button>
-                </form>
+                        <button type="submit">✅ Add Session</button>
+                    </form>
+                </div>
 
                 <div class="messages">
                     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -165,7 +172,7 @@ HTML_TEMPLATE = """
                 </div>
             </div>
             <div id="chart-tab" class="tab-panel">
-                <h2>Personalized Workout Chart</h2>
+                <h2 class="section-title">💡 Personalized Workout Plan</h2>
                 {% for category, exercises in workout_chart.items() %}
                     <div class="chart-group">
                         <h3>{{ category }}</h3>
@@ -178,7 +185,7 @@ HTML_TEMPLATE = """
                 {% endfor %}
             </div>
             <div id="diet-tab" class="tab-panel">
-                <h2>Best Diet Chart for Fitness Goals</h2>
+                <h2 class="section-title">🥗 Best Diet Guide for Fitness Goals</h2>
                 {% for goal, foods in diet_plans.items() %}
                     <div class="diet-group">
                         <h3>{{ goal }}</h3>
@@ -191,8 +198,8 @@ HTML_TEMPLATE = """
                 {% endfor %}
             </div>
             <div id="progress-tab" class="tab-panel">
-                <h2>Personal Progress Tracker</h2>
-                <p class="progress-note">Total time logged: {{ total_minutes }} minutes</p>
+                <h2 class="section-title">📈 Personal Progress Tracker (Minutes Logged)</h2>
+                <p class="progress-note">Track how your sessions build momentum.</p>
                 <p id="progress-empty" class="empty-progress" {% if total_minutes %}style="display:none"{% endif %}>Log workouts to unlock your progress insights.</p>
                 <div class="chart-wrapper">
                     <canvas id="durationBarChart" width="400" height="240"></canvas>
@@ -200,6 +207,7 @@ HTML_TEMPLATE = """
                 <div class="chart-wrapper">
                     <canvas id="distributionPieChart" width="400" height="240"></canvas>
                 </div>
+                <p class="progress-summary" id="progress-summary" {% if not total_minutes %}style="display:none"{% endif %}>Total Training Time Logged: {{ total_minutes }} minutes</p>
             </div>
         </div>
         <footer>
@@ -233,6 +241,7 @@ HTML_TEMPLATE = """
         var pieCanvas = document.getElementById('distributionPieChart');
         var barWrapper = barCanvas ? barCanvas.parentElement : null;
         var pieWrapper = pieCanvas ? pieCanvas.parentElement : null;
+        var summaryText = document.getElementById('progress-summary');
 
         if (totalMinutes > 0 && window.Chart && barCanvas && pieCanvas) {
             if (emptyMessage) {
@@ -243,6 +252,10 @@ HTML_TEMPLATE = """
             }
             if (pieWrapper) {
                 pieWrapper.style.display = 'block';
+            }
+            if (summaryText) {
+                summaryText.style.display = 'block';
+                summaryText.textContent = 'Total Training Time Logged: ' + totalMinutes + ' minutes';
             }
 
             var palette = ['#007bff', '#28a745', '#ffc107'];
@@ -307,6 +320,9 @@ HTML_TEMPLATE = """
             if (pieWrapper) {
                 pieWrapper.style.display = 'none';
             }
+            if (summaryText) {
+                summaryText.style.display = 'none';
+            }
         }
     });
     </script>
@@ -321,34 +337,42 @@ SUMMARY_TEMPLATE = """
     <meta charset='UTF-8'>
     <title>Workout Summary</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px #ccc; }
-        h1 { color: #2c3e50; }
-        h2 { color: #007bff; }
-        .session { margin-bottom: 16px; padding-left: 12px; }
-        .empty { color: #777; font-style: italic; }
-        .total { margin-top: 24px; font-weight: bold; color: #28a745; }
+        body { font-family: Arial, sans-serif; background: #eef1f4; margin: 0; padding: 0; }
+        .container { max-width: 700px; margin: 40px auto; background: #fff; padding: 32px; border-radius: 10px; box-shadow: 0 8px 22px rgba(44, 62, 80, 0.15); }
+        .summary-header { text-align: center; margin-bottom: 24px; }
+        .summary-header h1 { color: #2c3e50; margin-bottom: 8px; }
+        .summary-header p { color: #6c757d; margin: 0; }
+        .summary-category { color: #007bff; margin-top: 18px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: bold; }
+        .session { margin-bottom: 10px; padding-left: 18px; }
+        .session span { color: #6c757d; font-size: 0.9em; }
+        .empty { color: #777; font-style: italic; padding-left: 18px; }
+        .total { margin-top: 28px; font-weight: bold; color: #dc3545; font-size: 1.1em; }
         .note { margin-top: 12px; font-style: italic; color: #555; }
-        a { display: inline-block; margin-top: 24px; color: #007bff; text-decoration: none; }
+        a { display: inline-block; margin-top: 30px; color: #007bff; text-decoration: none; font-weight: bold; }
         a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Session Summary</h1>
+        <div class="summary-header">
+            <h1>📊 Weekly Session Summary</h1>
+            <p>Review your logged workouts by category.</p>
+        </div>
         {% for category, sessions in workouts.items() %}
-            <h2>{{ category }}</h2>
+            <div class="summary-category">{{ category }}</div>
             {% if sessions %}
                 {% for entry in sessions %}
-                    <div class="session">{{ loop.index }}. {{ entry.workout }} - {{ entry.duration }} min ({{ entry.calories }} cal) at {{ entry.timestamp }}</div>
+                    <div class="session">{{ loop.index }}. {{ entry.workout }} - {{ entry.duration }} min ({{ entry.calories }} cal)
+                        <span>• Logged: {{ entry.timestamp.split(' ')[0] }}</span>
+                    </div>
                 {% endfor %}
             {% else %}
-                <div class="session empty">No sessions recorded.</div>
+                <div class="empty">No sessions recorded.</div>
             {% endif %}
         {% endfor %}
         <div class="total">Total Time Spent: {{ total_time }} minutes</div>
         <div class="note">{{ motivation }}</div>
-        <a href="{{ url_for('index') }}">Back to Tracker</a>
+        <a href="{{ url_for('index') }}">⬅️ Back to Tracker</a>
     </div>
 </body>
 </html>
@@ -410,7 +434,7 @@ def add_workout():
         'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
     workouts[category].append(entry)
-    flash(f"Added {entry['workout']} ({duration} min) to {category}.", "info")
+    flash(f"✅ Added {entry['workout']} ({duration} min) to {category}.", "info")
     return redirect(url_for('index'))
 
 @app.route('/summary', methods=['GET'])
