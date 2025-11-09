@@ -156,16 +156,19 @@ pipeline {
                                 TAG=$(date +%Y%m%d)-${BUILD_NUMBER}
                                 REMOTE_IMAGE=${DOCKER_USER}/aceest-fitness-app:${TAG}
 
-                                echo "Applying k8s manifests (if any)"
                                 if [ -d k8s ]; then
-                                    kubectl apply -f k8s/
+                                    TMP_K8S_DIR=$(mktemp -d)
+                                    cp -r k8s/. "${TMP_K8S_DIR}/"
+                                    if [ -f "${TMP_K8S_DIR}/deployment.yaml" ]; then
+                                        sed -i "s|aceest-fitness-app:latest|${REMOTE_IMAGE}|g" "${TMP_K8S_DIR}/deployment.yaml"
+                                    else
+                                        echo "deployment.yaml not found in k8s/; skipping image substitution"
+                                    fi
+                                    kubectl apply -R -f "${TMP_K8S_DIR}/"
+                                    rm -rf "${TMP_K8S_DIR}"
                                 else
                                     echo "No k8s/ directory found; cannot apply manifests."
                                 fi
-
-                                echo "Updating deployment image to ${REMOTE_IMAGE}"
-                                # Try to set the image on the deployment; fail if it doesn't exist
-                                kubectl set image deployment/aceest-fitness-app aceest-fitness-app=${REMOTE_IMAGE} --record
 
                                 echo "Waiting for rollout to finish"
                                 kubectl rollout status deployment/aceest-fitness-app --timeout=120s

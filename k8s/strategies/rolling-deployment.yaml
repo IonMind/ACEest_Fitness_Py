@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-rolling
+  namespace: aceest
+  labels:
+    app: aceest
+    strategy: rolling
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aceest
+      strategy: rolling
+  template:
+    metadata:
+      labels:
+        app: aceest
+        strategy: rolling
+    spec:
+      containers:
+      - name: aceest
+        image: 2024tm93240/aceest-fitness:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-rolling-svc
+  namespace: aceest
+spec:
+  selector:
+    app: aceest
+    strategy: rolling
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 5000
+  type: ClusterIP
