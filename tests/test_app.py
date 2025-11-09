@@ -120,8 +120,8 @@ def test_index_returns_html_and_contains_form(client):
     assert b'name="duration"' in resp.data
     assert b'name="calories"' in resp.data
     assert b'name="category"' in resp.data
-    assert b'Personalized Workout Plan' in resp.data
-    assert b'Best Diet Guide for Fitness Goals' in resp.data
+    assert b'Personalized Workout Plan Guide' in resp.data
+    assert b'Nutritional Goal Setting Guide' in resp.data
 
 
 def test_add_post_redirects_to_index(client):
@@ -167,16 +167,16 @@ def test_summary_route_with_sessions(client):
 def test_progress_tab_initial_state(client):
     resp = client.get('/')
     assert resp.status_code == 200
-    assert b'Log workouts to unlock your progress insights.' in resp.data
+    assert b'No workout data logged yet. Log a session to see your progress!' in resp.data
     assert b'id="progress-summary" style="display:none"' in resp.data
-    assert b'Total Training Time Logged: 0 minutes' in resp.data
+    assert b'LIFETIME TOTAL: 0 minutes logged across all categories.' in resp.data
 
 
 def test_progress_tab_after_logging(client):
     client.post('/add', data={'workout': 'Intervals', 'duration': '30', 'calories': '320', 'category': 'Workout'}, follow_redirects=True)
     resp = client.get('/')
     assert resp.status_code == 200
-    assert b'Total Training Time Logged: 30 minutes' in resp.data
+    assert b'LIFETIME TOTAL: 30 minutes logged across all categories.' in resp.data
     assert b'id="progress-empty" class="empty-progress" style="display:none"' in resp.data
     page = resp.get_data(as_text=True)
     assert '"Workout": 30' in page
