@@ -1,13 +1,26 @@
 import html
+import re
 import pytest
-from src.app import app, workouts, CATEGORIES, WORKOUT_CHART_DATA, DIET_PLANS
+from src.app import (
+    app,
+    workouts,
+    CATEGORIES,
+    WORKOUT_CHART_DATA,
+    DIET_PLANS,
+    user_info,
+    MET_VALUES,
+)
 
 @pytest.fixture(autouse=True)
 def client():
+    """Provide a test client and clear global mutable state for isolation."""
     app.config['TESTING'] = True
     app.config['SECRET_KEY'] = 'test-secret'
-    for entries in workouts.values():  # Ensure test isolation without dropping categories
+    # Clear workouts
+    for entries in workouts.values():
         entries.clear()
+    # Clear user profile
+    user_info.clear()
     with app.test_client() as client:
         yield client
 
@@ -192,3 +205,107 @@ def test_reference_tabs_render_content(client):
     for foods in DIET_PLANS.values():
         for item in foods:
             assert html.escape(item).encode() in resp.data
+
+
+# ---------------- New Feature Tests (Parity with Tkinter v1.3) ---------------- #
+
+def test_user_info_save_valid(client):
+    resp = client.post('/user/save', data={
+        'name': 'Test User',
+        'regn_id': 'R123',
+        'age': '30',
+        'gender': 'M',
+        'height': '180',
+        'weight': '80',
+        'weekly_cal_goal': '2500',
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    # Flash message present
+    assert b'User info saved! BMI=' in resp.data
+    # Derived values
+    assert user_info['name'] == 'Test User'
+    assert user_info['bmi'] == pytest.approx(80 / (1.8 * 1.8))
+    # BMR (M): 10*80 + 6.25*180 - 5*30 + 5 = 800 + 1125 - 150 + 5 = 1780
+    assert user_info['bmr'] == pytest.approx(1780, rel=0.01)
+    # Progress bar shows weekly calories (0 / goal initially)
+    assert b'Weekly Calories:' in resp.data
+
+
+def test_user_info_save_invalid_gender(client):
+    resp = client.post('/user/save', data={
+        'name': 'Bad',
+        'regn_id': 'X1',
+        'age': '25',
+        'gender': 'X',
+        'height': '170',
+        'weight': '65',
+        'weekly_cal_goal': '2000',
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    assert b'Invalid input:' in resp.data
+    assert user_info == {}
+
+
+def test_add_workout_auto_valid(client):
+    # No user info saved: will default weight=70
+    resp = client.post('/add-auto', data={
+        'workout': 'QuickIntervals',
+        'duration': '10',
+        'category': 'Warm-up'
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    # Calories estimate: MET=3, weight=70, duration=10 -> round((3*3.5*70/200)*10)=37
+    assert b'QuickIntervals' in resp.data
+    assert b'37 kcal' in resp.data or b'~37 kcal' in resp.data
+    assert len(workouts['Warm-up']) == 1
+
+
+def test_add_workout_auto_with_user_weight(client):
+    client.post('/user/save', data={
+        'name': 'WUser', 'regn_id': 'R9', 'age': '40', 'gender': 'F', 'height': '165', 'weight': '55', 'weekly_cal_goal': '2000'
+    }, follow_redirects=True)
+    resp = client.post('/add-auto', data={
+        'workout': 'WarmFlow',
+        'duration': '20',
+        'category': 'Warm-up'
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    # Calories: (3*3.5*55/200)*20 = (577.5/200)*20 = 2.8875*20=57.75 -> 58
+    assert b'WarmFlow' in resp.data
+    assert b'58 kcal' in resp.data or b'~58 kcal' in resp.data
+    assert workouts['Warm-up'][0]['calories'] == 58
+
+
+def test_export_pdf_requires_user_info(client):
+    # Without user info should redirect and flash error
+    resp = client.get('/export/pdf', follow_redirects=True)
+    assert resp.status_code == 200
+    assert b'Please save user info first!' in resp.data
+
+
+def test_export_pdf_success(client):
+    client.post('/user/save', data={
+        'name': 'PDFUser', 'regn_id': 'RID', 'age': '28', 'gender': 'M', 'height': '175', 'weight': '70', 'weekly_cal_goal': '2100'
+    })
+    client.post('/add', data={'workout': 'Run', 'duration': '30', 'calories': '300', 'category': 'Workout'})
+    resp = client.get('/export/pdf')
+    assert resp.status_code == 200
+    assert resp.headers.get('Content-Type') == 'application/pdf'
+    pdf_bytes = resp.data[:10]
+    assert pdf_bytes.startswith(b'%PDF')
+
+
+def test_weekly_calories_progress_bar(client):
+    client.post('/user/save', data={
+        'name': 'CalUser', 'regn_id': 'C1', 'age': '26', 'gender': 'F', 'height': '160', 'weight': '60', 'weekly_cal_goal': '500'
+    }, follow_redirects=True)
+    # Add workouts so weekly calories accumulate
+    client.post('/add', data={'workout': 'Lift', 'duration': '45', 'calories': '350', 'category': 'Workout'}, follow_redirects=True)
+    client.post('/add', data={'workout': 'Stretch', 'duration': '15', 'calories': '50', 'category': 'Cool-down'}, follow_redirects=True)
+    page = client.get('/').get_data(as_text=True)
+    # Weekly Calories: 400 / 500 (350 + 50)
+    assert 'Weekly Calories:' in page
+    # Allow HTML tags between label and numeric values
+    assert re.search(r'Weekly Calories:\s*(?:</?[^>]+>\s*)*400\s*/\s*500', page)
+    # Progress percent should be 80%
+    assert 'width: 80%' in page
