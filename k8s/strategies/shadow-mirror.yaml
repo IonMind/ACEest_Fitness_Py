@@ -1,0 +1,47 @@
+# Assumes aceest-v1 is serving production; aceest-shadow receives mirrored requests
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-shadow
+  namespace: aceest
+  labels:
+    app: aceest
+    role: shadow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aceest
+      role: shadow
+  template:
+    metadata:
+      labels:
+        app: aceest
+        role: shadow
+    spec:
+      containers:
+      - name: aceest
+        image: 2024tm93240/aceest-fitness:shadow
+        ports:
+        - containerPort: 5000
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: aceest-mirror
+  namespace: aceest
+spec:
+  hosts:
+  - "aceest.example.com"
+  gateways:
+  - istio-system/aceest-gateway
+  http:
+  - route:
+    - destination:
+        host: aceest
+        subset: v1
+      weight: 100
+    mirror:
+      host: aceest
+      subset: shadow

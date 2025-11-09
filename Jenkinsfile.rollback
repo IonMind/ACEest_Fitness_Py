@@ -1,0 +1,97 @@
+pipeline {
+    agent any
+    options {
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '15'))
+        timestamps()
+    }
+    parameters {
+        choice(
+            name: 'KUBE_NAMESPACE',
+            choices: ['default', 'staging', 'production'],
+            description: 'Kubernetes namespace to deploy to'
+        )
+        string(
+            name: 'TARGET_IMAGE',
+            defaultValue: 'myregistry/aceest-fitness-app:20250101-001',
+            description: 'Full image (registry/repo:tag) to roll back to'
+        )
+    }
+    environment {
+        GITHUB_CREDENTIALS = 'githubnotify'
+    }
+    stages {
+        stage('Validate parameters') {
+            steps {
+                sh '''
+if [ -z "$TARGET_IMAGE" ]; then
+  echo "TARGET_IMAGE parameter is required for rollback deployments" >&2
+  exit 1
+fi
+'''
+                echo "Rollback target image: ${params.TARGET_IMAGE}"
+                echo "Target namespace    : ${params.KUBE_NAMESPACE}"
+            }
+        }
+
+        stage('Manual approval') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    input message: "Deploy ${params.TARGET_IMAGE} to namespace ${params.KUBE_NAMESPACE}?", ok: 'Deploy'
+                }
+            }
+        }
+
+        stage('Deploy selected image') {
+            steps {
+                withCredentials([
+                    file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')
+                ]) {
+                    withEnv([
+                        "KUBECONFIG=${KUBECONFIG_FILE}",
+                        "TARGET_IMAGE=${params.TARGET_IMAGE}",
+                        "KUBE_NAMESPACE=${params.KUBE_NAMESPACE}"
+                    ]) {
+                        sh '''
+set -e
+
+CURRENT_IMAGE=$(kubectl get deployment aceest-fitness-app \
+  -n "$KUBE_NAMESPACE" \
+  -o jsonpath='{.spec.template.spec.containers[0].image}' || true)
+echo "Current deployment image: $CURRENT_IMAGE"
+
+echo "Updating aceest-fitness-app to image $TARGET_IMAGE in namespace $KUBE_NAMESPACE"
+kubectl set image deployment/aceest-fitness-app \
+  aceest-fitness-app="$TARGET_IMAGE" \
+  -n "$KUBE_NAMESPACE" \
+  --record
+
+echo "Waiting for rollout to complete"
+kubectl rollout status deployment/aceest-fitness-app \
+  -n "$KUBE_NAMESPACE" \
+  --timeout=180s
+'''
+                    }
+                }
+            }
+        }
+    }
+    post {
+        success {
+            githubNotify(
+                context: 'CI/Jenkins-Rollback',
+                description: "Rollback to ${params.TARGET_IMAGE}",
+                status: 'SUCCESS',
+                credentialsId: GITHUB_CREDENTIALS
+            )
+        }
+        failure {
+            githubNotify(
+                context: 'CI/Jenkins-Rollback',
+                description: "Rollback failed for ${params.TARGET_IMAGE}",
+                status: 'FAILURE',
+                credentialsId: GITHUB_CREDENTIALS
+            )
+        }
+    }
+}

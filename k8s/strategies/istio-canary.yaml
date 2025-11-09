@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest
+  namespace: aceest
+spec:
+  selector:
+    app: aceest
+  ports:
+  - port: 80
+    targetPort: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-v1
+  namespace: aceest
+  labels:
+    app: aceest
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aceest
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: aceest
+        version: v1
+    spec:
+      containers:
+      - name: aceest
+        image: 2024tm93240/aceest-fitness:v1
+        ports:
+        - containerPort: 5000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-v2
+  namespace: aceest
+  labels:
+    app: aceest
+    version: v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aceest
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: aceest
+        version: v2
+    spec:
+      containers:
+      - name: aceest
+        image: 2024tm93240/aceest-fitness:v2
+        ports:
+        - containerPort: 5000
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: aceest-destination
+  namespace: aceest
+spec:
+  host: aceest.aceest.svc.cluster.local
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: aceest-virtualservice
+  namespace: aceest
+spec:
+  hosts:
+  - "aceest.example.com"   # replace with your host or use "*" for wildcard
+  gateways:
+  - istio-system/aceest-gateway # adapt gateway name if necessary
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: aceest.aceest.svc.cluster.local
+        subset: v1
+      weight: 90
+    - destination:
+        host: aceest.aceest.svc.cluster.local
+        subset: v2
+      weight: 10

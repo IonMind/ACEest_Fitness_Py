@@ -1,0 +1,76 @@
+# Stable service
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-stable
+  namespace: aceest
+spec:
+  selector:
+    app: aceest
+    variant: stable
+  ports:
+  - port: 80
+    targetPort: 5000
+
+---
+# Variant B (experiment)
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-variant
+  namespace: aceest
+spec:
+  selector:
+    app: aceest
+    variant: b
+  ports:
+  - port: 80
+    targetPort: 5000
+
+---
+# Ingress for stable
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aceest-stable-ing
+  namespace: aceest
+spec:
+  rules:
+  - host: aceest.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aceest-stable
+            port:
+              number: 80
+
+---
+# Ingress acting as canary (NGINX annotations)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aceest-canary-ing
+  namespace: aceest
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/canary: "true"
+    # route 10% of traffic to canary OR route when header X-AB: b
+    nginx.ingress.kubernetes.io/canary-weight: "10"
+    # alternatively:
+    # nginx.ingress.kubernetes.io/canary-by-header: "X-AB"
+    # nginx.ingress.kubernetes.io/canary-by-cookie: "ABTest"
+spec:
+  rules:
+  - host: aceest.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aceest-variant
+            port:
+              number: 80

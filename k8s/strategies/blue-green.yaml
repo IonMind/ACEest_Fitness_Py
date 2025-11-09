@@ -1,0 +1,70 @@
+# Blue deployment (stable)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-blue
+  namespace: aceest
+  labels:
+    app: aceest
+    color: blue
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aceest
+      color: blue
+  template:
+    metadata:
+      labels:
+        app: aceest
+        color: blue
+    spec:
+      containers:
+      - name: aceest
+        image: 2024tm93240/aceest-fitness:blue # replace with actual tag
+        ports:
+        - containerPort: 5000
+
+---
+# Green deployment (new version)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-green
+  namespace: aceest
+  labels:
+    app: aceest
+    color: green
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aceest
+      color: green
+  template:
+    metadata:
+      labels:
+        app: aceest
+        color: green
+    spec:
+      containers:
+      - name: aceest
+        image: 2024tm93240/aceest-fitness:green # replace with actual tag
+        ports:
+        - containerPort: 5000
+
+---
+# Service points to active color - toggle "color" label to switch
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-svc
+  namespace: aceest
+spec:
+  selector:
+    app: aceest
+    color: blue
+  ports:
+  - port: 80
+    targetPort: 5000
+  type: ClusterIP
