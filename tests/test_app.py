@@ -15,9 +15,10 @@ def test_homepage_loads(client):
     response = client.get('/')
     assert response.status_code == 200
     assert b'ACEestFitness and Gym' in response.data
-    assert b'Log Workouts' in response.data
-    assert b'Workout Chart' in response.data
-    assert b'Diet Chart' in response.data
+    assert '🏋️ Log Workouts'.encode() in response.data
+    assert '💡 Workout Plan'.encode() in response.data
+    assert '🥗 Diet Guide'.encode() in response.data
+    assert '📈 Progress Tracker'.encode() in response.data
     for category in CATEGORIES:
         assert category.encode() in response.data
     assert b'name="category"' in response.data
@@ -33,7 +34,7 @@ def test_add_workout_valid(client):
     assert b'Running' in response.data
     assert b'30 min' in response.data
     assert b'250 cal' in response.data
-    assert b'Added Running (30 min) to Workout.' in response.data
+    assert '✅ Added Running (30 min) to Workout.'.encode() in response.data
     assert len(workouts['Workout']) == 1
 
 def test_add_workout_invalid(client):
@@ -119,8 +120,8 @@ def test_index_returns_html_and_contains_form(client):
     assert b'name="duration"' in resp.data
     assert b'name="calories"' in resp.data
     assert b'name="category"' in resp.data
-    assert b'Personalized Workout Chart' in resp.data
-    assert b'Best Diet Chart for Fitness Goals' in resp.data
+    assert b'Personalized Workout Plan' in resp.data
+    assert b'Best Diet Guide for Fitness Goals' in resp.data
 
 
 def test_add_post_redirects_to_index(client):
@@ -161,6 +162,25 @@ def test_summary_route_with_sessions(client):
     assert b'Stretch' in resp.data
     assert b'Total Time Spent: 80 minutes' in resp.data
     assert b'Excellent dedication! Keep up the great work' in resp.data
+
+
+def test_progress_tab_initial_state(client):
+    resp = client.get('/')
+    assert resp.status_code == 200
+    assert b'Log workouts to unlock your progress insights.' in resp.data
+    assert b'id="progress-summary" style="display:none"' in resp.data
+    assert b'Total Training Time Logged: 0 minutes' in resp.data
+
+
+def test_progress_tab_after_logging(client):
+    client.post('/add', data={'workout': 'Intervals', 'duration': '30', 'calories': '320', 'category': 'Workout'}, follow_redirects=True)
+    resp = client.get('/')
+    assert resp.status_code == 200
+    assert b'Total Training Time Logged: 30 minutes' in resp.data
+    assert b'id="progress-empty" class="empty-progress" style="display:none"' in resp.data
+    page = resp.get_data(as_text=True)
+    assert '"Workout": 30' in page
+    assert '"Warm-up": 0' in page
 
 
 def test_reference_tabs_render_content(client):
