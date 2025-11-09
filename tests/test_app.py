@@ -1,5 +1,6 @@
+import html
 import pytest
-from src.app import app, workouts, CATEGORIES
+from src.app import app, workouts, CATEGORIES, WORKOUT_CHART_DATA, DIET_PLANS
 
 @pytest.fixture(autouse=True)
 def client():
@@ -14,6 +15,9 @@ def test_homepage_loads(client):
     response = client.get('/')
     assert response.status_code == 200
     assert b'ACEestFitness and Gym' in response.data
+    assert b'Log Workouts' in response.data
+    assert b'Workout Chart' in response.data
+    assert b'Diet Chart' in response.data
     for category in CATEGORIES:
         assert category.encode() in response.data
     assert b'name="category"' in response.data
@@ -115,6 +119,8 @@ def test_index_returns_html_and_contains_form(client):
     assert b'name="duration"' in resp.data
     assert b'name="calories"' in resp.data
     assert b'name="category"' in resp.data
+    assert b'Personalized Workout Chart' in resp.data
+    assert b'Best Diet Chart for Fitness Goals' in resp.data
 
 
 def test_add_post_redirects_to_index(client):
@@ -155,3 +161,14 @@ def test_summary_route_with_sessions(client):
     assert b'Stretch' in resp.data
     assert b'Total Time Spent: 80 minutes' in resp.data
     assert b'Excellent dedication! Keep up the great work' in resp.data
+
+
+def test_reference_tabs_render_content(client):
+    resp = client.get('/')
+    assert resp.status_code == 200
+    for exercises in WORKOUT_CHART_DATA.values():
+        for exercise in exercises:
+            assert html.escape(exercise).encode() in resp.data
+    for foods in DIET_PLANS.values():
+        for item in foods:
+            assert html.escape(item).encode() in resp.data
