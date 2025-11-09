@@ -158,7 +158,7 @@ pipeline {
 
                                 if [ -d k8s ]; then
                                     TMP_K8S_DIR=$(mktemp -d)
-                                    cp -r k8s/. "${TMP_K8S_DIR}/"
+                                    cp -r k8s/deployments/. "${TMP_K8S_DIR}/"
                                     if [ -f "${TMP_K8S_DIR}/deployment.yaml" ]; then
                                         sed -i "s|aceest-fitness-app:latest|${REMOTE_IMAGE}|g" "${TMP_K8S_DIR}/deployment.yaml"
                                     else
