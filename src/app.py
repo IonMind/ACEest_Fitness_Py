@@ -10,6 +10,53 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "aceest-dev-secret")
 CATEGORIES = ("Warm-up", "Workout", "Cool-down")
 workouts = {category: [] for category in CATEGORIES}
 
+WORKOUT_CHART_DATA = {
+    "Warm-up": [
+        "5 min Jog",
+        "Jumping Jacks",
+        "Arm Circles",
+        "Leg Swings",
+        "Dynamic Stretching",
+    ],
+    "Workout": [
+        "Push-ups",
+        "Squats",
+        "Plank",
+        "Lunges",
+        "Burpees",
+        "Crunches",
+    ],
+    "Cool-down": [
+        "Slow Walking",
+        "Static Stretching",
+        "Deep Breathing",
+        "Yoga Poses",
+    ],
+}
+
+DIET_PLANS = {
+    "Weight Loss": [
+        "Oatmeal with Fruits",
+        "Grilled Chicken Salad",
+        "Vegetable Soup",
+        "Brown Rice & Stir-fry Veggies",
+    ],
+    "Muscle Gain": [
+        "Egg Omelet",
+        "Chicken Breast",
+        "Quinoa & Beans",
+        "Protein Shake",
+        "Greek Yogurt with Nuts",
+    ],
+    "Endurance": [
+        "Banana & Peanut Butter",
+        "Whole Grain Pasta",
+        "Sweet Potatoes",
+        "Salmon & Avocado",
+        "Trail Mix",
+    ],
+}
+
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang='en'>
@@ -18,84 +65,149 @@ HTML_TEMPLATE = """
     <title>ACEestFitness and Gym</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px #ccc; }
-        h1 { color: #2c3e50; }
+        .container { max-width: 760px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px #ccc; }
+        h1 { color: #2c3e50; margin-bottom: 8px; }
+        .subtitle { color: #555; margin-top: 0; }
         form { margin-bottom: 24px; }
         label { display: block; margin-top: 12px; }
         input[type=text], input[type=number] { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px; }
         select { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px; }
         button { margin-top: 16px; padding: 10px 20px; background: #27ae60; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
         button:hover { background: #219150; }
-        .workout-list { margin-top: 32px; }
-        .workout-item { background: #eafaf1; padding: 10px; border-radius: 4px; margin-bottom: 8px; }
         .messages { margin-top: 16px; }
         .messages .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 10px; border-radius: 4px; margin-bottom: 8px; }
         .messages .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; border-radius: 4px; margin-bottom: 8px; }
+        .workout-list { margin-top: 32px; }
+        .workout-item { background: #eafaf1; padding: 10px; border-radius: 4px; margin-bottom: 8px; }
         .actions { margin-top: 16px; text-align: center; }
         .actions a { color: #007bff; text-decoration: none; }
         .actions a:hover { text-decoration: underline; }
+        .tabs { margin-top: 24px; }
+        .tab-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tab-btn { background: #e0e7ef; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; color: #2c3e50; transition: background 0.3s; }
+        .tab-btn:hover { background: #d0d9e4; }
+        .tab-btn.active { background: #007bff; color: #fff; }
+        .tab-panel { display: none; margin-top: 24px; }
+        .tab-panel.active { display: block; }
+        .chart-group, .diet-group { background: #f8f9fa; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
+        .chart-group h3, .diet-group h3 { margin-top: 0; }
+        ul { padding-left: 18px; }
+        footer { margin-top: 24px; font-size: 0.9em; color: #666; text-align: center; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>ACEestFitness and Gym</h1>
-        <form method="POST" action="{{ url_for('add_workout') }}">
-            <label for="workout">Workout Name:</label>
-            <input type="text" id="workout" name="workout" required>
+        <p class="subtitle">Log your training, follow curated workout flows, and keep nutrition aligned.</p>
+        <div class="tabs">
+            <div class="tab-nav">
+                <button type="button" class="tab-btn active" data-target="log-tab">Log Workouts</button>
+                <button type="button" class="tab-btn" data-target="chart-tab">Workout Chart</button>
+                <button type="button" class="tab-btn" data-target="diet-tab">Diet Chart</button>
+            </div>
+            <div id="log-tab" class="tab-panel active">
+                <form method="POST" action="{{ url_for('add_workout') }}">
+                    <label for="workout">Workout Name:</label>
+                    <input type="text" id="workout" name="workout" required>
 
-            <label for="duration">Duration (minutes):</label>
-            <input type="number" id="duration" name="duration" min="1" required>
+                    <label for="duration">Duration (minutes):</label>
+                    <input type="number" id="duration" name="duration" min="1" required>
 
-            <label for="calories">Calories Burned:</label>
-            <input type="number" id="calories" name="calories" min="0" required>
+                    <label for="calories">Calories Burned:</label>
+                    <input type="number" id="calories" name="calories" min="0" required>
 
-            <label for="category">Select Category:</label>
-            <select id="category" name="category" required>
-                {% for category in categories %}
-                    <option value="{{ category }}" {% if category == default_category %}selected{% endif %}>{{ category }}</option>
-                {% endfor %}
-            </select>
+                    <label for="category">Select Category:</label>
+                    <select id="category" name="category" required>
+                        {% for category in categories %}
+                            <option value="{{ category }}" {% if category == default_category %}selected{% endif %}>{{ category }}</option>
+                        {% endfor %}
+                    </select>
 
-            <button type="submit">Add Workout</button>
-        </form>
+                    <button type="submit">Add Workout</button>
+                </form>
 
-        <div class="messages">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, msg in messages %}
-                        <div class="{{ category }}">{{ msg }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-        </div>
+                <div class="messages">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, msg in messages %}
+                                <div class="{{ category }}">{{ msg }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
 
-        <div class="workout-list">
-            <h2>Logged Workouts</h2>
-            {% if total_sessions %}
-                {% for category, sessions in workouts.items() %}
-                    <h3>{{ category }}</h3>
-                    {% if sessions %}
-                        {% for entry in sessions %}
-                            <div class="workout-item">
-                                <strong>{{ entry.workout }}</strong> - {{ entry.duration }} min, {{ entry.calories }} cal<br>
-                                <small>Logged at {{ entry.timestamp }}</small>
-                            </div>
+                <div class="workout-list">
+                    <h2>Logged Workouts</h2>
+                    {% if total_sessions %}
+                        {% for category, sessions in workouts.items() %}
+                            <h3>{{ category }}</h3>
+                            {% if sessions %}
+                                {% for entry in sessions %}
+                                    <div class="workout-item">
+                                        <strong>{{ entry.workout }}</strong> - {{ entry.duration }} min, {{ entry.calories }} cal<br>
+                                        <small>Logged at {{ entry.timestamp }}</small>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p>No sessions recorded for this category.</p>
+                            {% endif %}
                         {% endfor %}
                     {% else %}
-                        <p>No sessions recorded for this category.</p>
+                        <p>No workouts logged yet.</p>
                     {% endif %}
+                </div>
+                <div class="actions">
+                    <a href="{{ url_for('summary') }}">View Summary</a>
+                </div>
+            </div>
+            <div id="chart-tab" class="tab-panel">
+                <h2>Personalized Workout Chart</h2>
+                {% for category, exercises in workout_chart.items() %}
+                    <div class="chart-group">
+                        <h3>{{ category }}</h3>
+                        <ul>
+                            {% for exercise in exercises %}
+                                <li>{{ exercise }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 {% endfor %}
-            {% else %}
-                <p>No workouts logged yet.</p>
-            {% endif %}
+            </div>
+            <div id="diet-tab" class="tab-panel">
+                <h2>Best Diet Chart for Fitness Goals</h2>
+                {% for goal, foods in diet_plans.items() %}
+                    <div class="diet-group">
+                        <h3>{{ goal }}</h3>
+                        <ul>
+                            {% for item in foods %}
+                                <li>{{ item }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
-        <div class="actions">
-            <a href="{{ url_for('summary') }}">View Summary</a>
-        </div>
-        <footer style="margin-top:24px; font-size:0.9em; color:#666; text-align:center;">
+        <footer>
             Version: {{ version }}
         </footer>
     </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var buttons = document.querySelectorAll('.tab-btn');
+        var panels = document.querySelectorAll('.tab-panel');
+        buttons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                buttons.forEach(function (item) { item.classList.remove('active'); });
+                panels.forEach(function (panel) { panel.classList.remove('active'); });
+                btn.classList.add('active');
+                var target = document.getElementById(btn.dataset.target);
+                if (target) {
+                    target.classList.add('active');
+                }
+            });
+        });
+    });
+    </script>
 </body>
 </html>
 """
@@ -151,6 +263,8 @@ def index():
         default_category="Workout",
         total_sessions=total_sessions,
         version=version,
+        workout_chart=WORKOUT_CHART_DATA,
+        diet_plans=DIET_PLANS,
     )
 
 @app.route('/add', methods=['POST'])
