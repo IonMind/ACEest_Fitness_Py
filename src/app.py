@@ -64,7 +64,7 @@ HTML_TEMPLATE = """
     <meta charset='UTF-8'>
     <title>ACEestFitness and Gym</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
         .container { max-width: 760px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px #ccc; }
         h1 { color: #2c3e50; margin-bottom: 8px; }
         .subtitle { color: #555; margin-top: 0; }
@@ -92,6 +92,9 @@ HTML_TEMPLATE = """
         .chart-group, .diet-group { background: #f8f9fa; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
         .chart-group h3, .diet-group h3 { margin-top: 0; }
         ul { padding-left: 18px; }
+        .chart-wrapper { background: #fff; border-radius: 6px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .progress-note { color: #555; margin-bottom: 16px; }
+        .empty-progress { color: #777; font-style: italic; }
         footer { margin-top: 24px; font-size: 0.9em; color: #666; text-align: center; }
     </style>
 </head>
@@ -104,6 +107,7 @@ HTML_TEMPLATE = """
                 <button type="button" class="tab-btn active" data-target="log-tab">Log Workouts</button>
                 <button type="button" class="tab-btn" data-target="chart-tab">Workout Chart</button>
                 <button type="button" class="tab-btn" data-target="diet-tab">Diet Chart</button>
+                <button type="button" class="tab-btn" data-target="progress-tab">Progress Tracker</button>
             </div>
             <div id="log-tab" class="tab-panel active">
                 <form method="POST" action="{{ url_for('add_workout') }}">
@@ -186,11 +190,23 @@ HTML_TEMPLATE = """
                     </div>
                 {% endfor %}
             </div>
+            <div id="progress-tab" class="tab-panel">
+                <h2>Personal Progress Tracker</h2>
+                <p class="progress-note">Total time logged: {{ total_minutes }} minutes</p>
+                <p id="progress-empty" class="empty-progress" {% if total_minutes %}style="display:none"{% endif %}>Log workouts to unlock your progress insights.</p>
+                <div class="chart-wrapper">
+                    <canvas id="durationBarChart" width="400" height="240"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="distributionPieChart" width="400" height="240"></canvas>
+                </div>
+            </div>
         </div>
         <footer>
             Version: {{ version }}
         </footer>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         var buttons = document.querySelectorAll('.tab-btn');
@@ -206,6 +222,92 @@ HTML_TEMPLATE = """
                 }
             });
         });
+
+        var totals = {{ progress_totals | tojson }};
+        var labels = Object.keys(totals);
+        var values = labels.map(function (key) { return totals[key]; });
+        var totalMinutes = values.reduce(function (acc, value) { return acc + value; }, 0);
+
+        var emptyMessage = document.getElementById('progress-empty');
+        var barCanvas = document.getElementById('durationBarChart');
+        var pieCanvas = document.getElementById('distributionPieChart');
+        var barWrapper = barCanvas ? barCanvas.parentElement : null;
+        var pieWrapper = pieCanvas ? pieCanvas.parentElement : null;
+
+        if (totalMinutes > 0 && window.Chart && barCanvas && pieCanvas) {
+            if (emptyMessage) {
+                emptyMessage.style.display = 'none';
+            }
+            if (barWrapper) {
+                barWrapper.style.display = 'block';
+            }
+            if (pieWrapper) {
+                pieWrapper.style.display = 'block';
+            }
+
+            var palette = ['#007bff', '#28a745', '#ffc107'];
+
+            var barContext = barCanvas.getContext('2d');
+            new Chart(barContext, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Minutes Logged',
+                        data: values,
+                        backgroundColor: palette,
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Minutes'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            var pieContext = pieCanvas.getContext('2d');
+            new Chart(pieContext, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: palette,
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        } else {
+            if (barCanvas) {
+                barCanvas.style.display = 'none';
+            }
+            if (pieCanvas) {
+                pieCanvas.style.display = 'none';
+            }
+            if (barWrapper) {
+                barWrapper.style.display = 'none';
+            }
+            if (pieWrapper) {
+                pieWrapper.style.display = 'none';
+            }
+        }
     });
     </script>
 </body>
@@ -256,6 +358,8 @@ SUMMARY_TEMPLATE = """
 def index():
     version = os.environ.get('APP_VERSION', 'unknown')
     total_sessions = sum(len(sessions) for sessions in workouts.values())
+    progress_totals = {category: sum(entry['duration'] for entry in sessions) for category, sessions in workouts.items()}
+    total_minutes = sum(progress_totals.values())
     return render_template_string(
         HTML_TEMPLATE,
         workouts=workouts,
@@ -265,6 +369,8 @@ def index():
         version=version,
         workout_chart=WORKOUT_CHART_DATA,
         diet_plans=DIET_PLANS,
+        progress_totals=progress_totals,
+        total_minutes=total_minutes,
     )
 
 @app.route('/add', methods=['POST'])
